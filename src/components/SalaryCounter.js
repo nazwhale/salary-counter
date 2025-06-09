@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -41,15 +41,52 @@ export default function SalaryCounter() {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  // Calculates how much we've earned so far today
+  const calculateDailyEarnings = useCallback((annual) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Check if today is a working day
+    if (!isDayEnabled(today)) {
+      return 0;
+    }
+
+    // Calculate daily rate based on working days in a year
+    // Assuming we work the same schedule throughout the year
+    const totalWorkingDaysPerYear = getTotalWorkingDaysPerYear();
+    const dailyRate = totalWorkingDaysPerYear > 0 ? annual / totalWorkingDaysPerYear : 0;
+
+    const totalDailyWorkingHours = getDailyWorkingHours();
+    const elapsedHours = getWorkingHoursSoFarToday();
+
+    // safeguard if totalDailyWorkingHours is 0
+    if (totalDailyWorkingHours === 0) return 0;
+
+    const fraction = Math.max(0, Math.min(1, elapsedHours / totalDailyWorkingHours));
+    return dailyRate * fraction;
+  }, [dayToggles, startHour, endHour]);
+
+  // Calculates how much we've earned so far this month
+  const calculateEarnings = useCallback((annual) => {
+    const monthly = annual / 12;
+    const totalWorkingHours = getTotalWorkingHoursThisMonth();
+    const elapsedHours = getWorkingHoursSoFarThisMonth();
+    // safeguard if totalWorkingHours is 0
+    if (totalWorkingHours === 0) return 0;
+
+    const fraction = Math.max(0, Math.min(1, elapsedHours / totalWorkingHours));
+    return monthly * fraction;
+  }, [dayToggles, startHour, endHour]);
+
   useEffect(() => {
     // Recalculate every second
     const interval = setInterval(() => {
       setEarnedSoFar(calculateEarnings(annualSalary));
       setEarnedToday(calculateDailyEarnings(annualSalary));
-    }, 1000);
+    }, 500);
 
     return () => clearInterval(interval);
-  }, [annualSalary, startHour, endHour, dayToggles, currency]);
+  }, [annualSalary, startHour, endHour, dayToggles, currency, calculateEarnings, calculateDailyEarnings]);
 
   // Helper function: checks if a given date is toggled on in dayToggles
   function isDayEnabled(date) {
@@ -87,44 +124,6 @@ export default function SalaryCounter() {
   // Helper function: total working hours in a single day
   function getDailyWorkingHours() {
     return endHour - startHour;
-  }
-
-  // Calculates how much we've earned so far today
-  function calculateDailyEarnings(annual) {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    // Check if today is a working day
-    if (!isDayEnabled(today)) {
-      return 0;
-    }
-
-    // Calculate daily rate based on working days in a year
-    // Assuming we work the same schedule throughout the year
-    const totalWorkingDaysPerYear = getTotalWorkingDaysPerYear();
-    const dailyRate = totalWorkingDaysPerYear > 0 ? annual / totalWorkingDaysPerYear : 0;
-
-    const totalDailyWorkingHours = getDailyWorkingHours();
-    const elapsedHours = getWorkingHoursSoFarToday();
-
-    // safeguard if totalDailyWorkingHours is 0
-    if (totalDailyWorkingHours === 0) return 0;
-
-    const fraction = Math.max(0, Math.min(1, elapsedHours / totalDailyWorkingHours));
-    return dailyRate * fraction;
-  }
-
-  // Helper function: calculate total working days per year based on current schedule
-  function getTotalWorkingDaysPerYear() {
-    let workingDays = 0;
-    // Count working days per week
-    for (let day = 0; day < 7; day++) {
-      if (dayToggles[day]) {
-        workingDays++;
-      }
-    }
-    // Multiply by 52 weeks (approximately)
-    return workingDays * 52;
   }
 
   // Helper function: get how many working hours have elapsed so far in the current month
@@ -191,16 +190,17 @@ export default function SalaryCounter() {
     return workingHours;
   }
 
-  // Calculates how much we've earned so far this month
-  function calculateEarnings(annual) {
-    const monthly = annual / 12;
-    const totalWorkingHours = getTotalWorkingHoursThisMonth();
-    const elapsedHours = getWorkingHoursSoFarThisMonth();
-    // safeguard if totalWorkingHours is 0
-    if (totalWorkingHours === 0) return 0;
-
-    const fraction = Math.max(0, Math.min(1, elapsedHours / totalWorkingHours));
-    return monthly * fraction;
+  // Helper function: calculate total working days per year based on current schedule
+  function getTotalWorkingDaysPerYear() {
+    let workingDays = 0;
+    // Count working days per week
+    for (let day = 0; day < 7; day++) {
+      if (dayToggles[day]) {
+        workingDays++;
+      }
+    }
+    // Multiply by 52 weeks (approximately)
+    return workingDays * 52;
   }
 
   // format currency using the chosen symbol in the UI

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocalStorage } from 'usehooks-ts';
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -7,7 +8,7 @@ import { motion } from "framer-motion";
 export default function SalaryCounter() {
   // Each day: 0=Sunday,1=Monday,2=Tuesday,3=Wednesday,4=Thursday,5=Friday,6=Saturday
   // default to Mon-Fri on, Sat & Sun off
-  const [dayToggles, setDayToggles] = useState({
+  const [dayToggles, setDayToggles] = useLocalStorage('salary-counter-day-toggles', {
     0: false,
     1: true,
     2: true,
@@ -17,14 +18,14 @@ export default function SalaryCounter() {
     6: false,
   });
 
-  const [annualSalary, setAnnualSalary] = useState(30000);
+  const [annualSalary, setAnnualSalary] = useLocalStorage('salary-counter-annual-salary', 30000);
+  const [startHour, setStartHour] = useLocalStorage('salary-counter-start-hour', 10);
+  const [endHour, setEndHour] = useLocalStorage('salary-counter-end-hour', 18);
+  const [currency, setCurrency] = useLocalStorage('salary-counter-currency', '£');
+
+  // These values are calculated and don't need to be persisted
   const [earnedSoFar, setEarnedSoFar] = useState(0);
   const [earnedToday, setEarnedToday] = useState(0);
-  const [startHour, setStartHour] = useState(10);
-  const [endHour, setEndHour] = useState(18);
-
-  // currency options: $, £, €, ¥
-  const [currency, setCurrency] = useState('£');
 
   // We'll keep a map of currency => locale + code
   // Use English-based locales for all, so we always get something like 7,826.09

@@ -19,6 +19,7 @@ export default function SalaryCounter() {
 
   const [annualSalary, setAnnualSalary] = useState(30000);
   const [earnedSoFar, setEarnedSoFar] = useState(0);
+  const [earnedToday, setEarnedToday] = useState(0);
   const [startHour, setStartHour] = useState(10);
   const [endHour, setEndHour] = useState(18);
 
@@ -44,6 +45,7 @@ export default function SalaryCounter() {
     // Recalculate every second
     const interval = setInterval(() => {
       setEarnedSoFar(calculateEarnings(annualSalary));
+      setEarnedToday(calculateDailyEarnings(annualSalary));
     }, 1000);
 
     return () => clearInterval(interval);
@@ -53,6 +55,76 @@ export default function SalaryCounter() {
   function isDayEnabled(date) {
     const day = date.getDay(); // 0=Sunday, 1=Monday, etc.
     return !!dayToggles[day]; // if toggled on
+  }
+
+  // Helper function: get how many working hours have elapsed so far today
+  function getWorkingHoursSoFarToday() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Check if today is a working day
+    if (!isDayEnabled(today)) {
+      return 0;
+    }
+
+    const startOfWork = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startHour, 0, 0);
+    const endOfWork = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, 0, 0);
+
+    if (now < startOfWork) {
+      // Before workday starts
+      return 0;
+    } else if (now > endOfWork) {
+      // After workday ends
+      return endHour - startHour;
+    } else {
+      // Part of the workday has passed
+      const msSinceStart = now - startOfWork;
+      const hoursSinceStart = msSinceStart / 1000 / 3600;
+      return hoursSinceStart;
+    }
+  }
+
+  // Helper function: total working hours in a single day
+  function getDailyWorkingHours() {
+    return endHour - startHour;
+  }
+
+  // Calculates how much we've earned so far today
+  function calculateDailyEarnings(annual) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Check if today is a working day
+    if (!isDayEnabled(today)) {
+      return 0;
+    }
+
+    // Calculate daily rate based on working days in a year
+    // Assuming we work the same schedule throughout the year
+    const totalWorkingDaysPerYear = getTotalWorkingDaysPerYear();
+    const dailyRate = totalWorkingDaysPerYear > 0 ? annual / totalWorkingDaysPerYear : 0;
+
+    const totalDailyWorkingHours = getDailyWorkingHours();
+    const elapsedHours = getWorkingHoursSoFarToday();
+
+    // safeguard if totalDailyWorkingHours is 0
+    if (totalDailyWorkingHours === 0) return 0;
+
+    const fraction = Math.max(0, Math.min(1, elapsedHours / totalDailyWorkingHours));
+    return dailyRate * fraction;
+  }
+
+  // Helper function: calculate total working days per year based on current schedule
+  function getTotalWorkingDaysPerYear() {
+    let workingDays = 0;
+    // Count working days per week
+    for (let day = 0; day < 7; day++) {
+      if (dayToggles[day]) {
+        workingDays++;
+      }
+    }
+    // Multiply by 52 weeks (approximately)
+    return workingDays * 52;
   }
 
   // Helper function: get how many working hours have elapsed so far in the current month
@@ -208,6 +280,17 @@ export default function SalaryCounter() {
   const dayOfMonth = now.getDate();
   const percentComplete = ((dayOfMonth / daysInMonth) * 100).toFixed(1);
 
+  // Calculate today's progress percentage
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let todayPercentComplete = 0;
+  if (isDayEnabled(today)) {
+    const totalDailyHours = getDailyWorkingHours();
+    const elapsedTodayHours = getWorkingHoursSoFarToday();
+    if (totalDailyHours > 0) {
+      todayPercentComplete = ((elapsedTodayHours / totalDailyHours) * 100).toFixed(1);
+    }
+  }
+
   // We'll calculate the per-second earnings within work hours.
   const totalWorkHours = getTotalWorkingHoursThisMonth();
   const totalWorkSeconds = totalWorkHours * 3600;
@@ -305,9 +388,18 @@ export default function SalaryCounter() {
               <h2 className="text-xl font-bold mb-2">Earnings So Far In {currentMonthName}</h2>
               <p className="text-3xl font-semibold">{formatCurrency(earnedSoFar)}</p>
             </div>
+            <div className="bg-white rounded-xl p-4 shadow-md mt-4">
+              <h2 className="text-xl font-bold mb-2">Earnings So Far Today</h2>
+              <p className="text-3xl font-semibold">{formatCurrency(earnedToday)}</p>
+            </div>
             <div className="mt-4 text-sm text-gray-600">
               <p>Earnings increase only in work hours.</p>
               <p>You are {percentComplete}% though the month.</p>
+              {isDayEnabled(today) ? (
+                <p>You are {todayPercentComplete}% through today's work hours.</p>
+              ) : (
+                <p>Today is not a working day.</p>
+              )}
             </div>
           </CardContent>
         </Card>

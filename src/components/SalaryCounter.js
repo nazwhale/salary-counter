@@ -394,12 +394,42 @@ export default function SalaryCounter() {
             </div>
             <div className="mt-4 text-sm text-gray-600">
               <p>Earnings increase only in work hours.</p>
-              <p>You are {percentComplete}% though the month.</p>
-              {isDayEnabled(today) ? (
-                <p>You are {todayPercentComplete}% through today's work hours.</p>
-              ) : (
-                <p>Today is not a working day.</p>
-              )}
+
+              {/* Month Progress Bar */}
+              <div className="mt-3">
+                <div className="flex justify-between items-center mb-1">
+                  <span>Progress through {currentMonthName}</span>
+                  <span className="font-medium">{percentComplete}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-blue-500 h-3 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${percentComplete}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Today Progress Bar */}
+              <div className="mt-3">
+                {isDayEnabled(today) ? (
+                  <>
+                    <div className="flex justify-between items-center mb-1">
+                      <span>Progress through today's work hours</span>
+                      <span className="font-medium">{todayPercentComplete}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-green-500 h-3 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${todayPercentComplete}%` }}
+                      ></div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-2 text-gray-500">
+                    Today is not a working day.
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

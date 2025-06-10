@@ -400,7 +400,7 @@ export default function SalaryCounter() {
                     </div>
 
                     {/* Take Home Toggle Section */}
-                    <div className="border-b">
+                    <div className="border-b pb-4">
                       <div className="flex items-center justify-between mb-3">
                         <Label className="text-base font-semibold">
                           Show Take-Home (After Tax)

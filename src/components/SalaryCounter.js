@@ -328,14 +328,14 @@ export default function SalaryCounter() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-blue-200 p-4">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="max-w-md w-full"
       >
-        <Card className="shadow-lg p-4 rounded-2xl">
+        <Card className="shadow-lg p-4 rounded-2xl bg-white">
           <CardContent>
             <Accordion type="single" collapsible={true} className="mb-6">
               <AccordionItem value="config">

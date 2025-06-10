@@ -478,17 +478,6 @@ export default function SalaryCounter() {
               </p>
             </div>
             <div className="mt-4 text-sm text-gray-600">
-              {!isCurrentlyInWorkHours() && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg mb-3"
-                >
-                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                  <p>Earnings increase only during work hours.</p>
-                </motion.div>
-              )}
-
               {/* Prominent earnings rate display - always visible */}
               {earnedPerSecond > 0 && (
                 <motion.div
@@ -506,6 +495,17 @@ export default function SalaryCounter() {
                     </span>
                   </div>
                   <p className="text-xs text-gray-600 mt-1">During work hours</p>
+                </motion.div>
+              )}
+
+              {(!isCurrentlyInWorkHours() || !isDayEnabled(today)) && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg mb-3"
+                >
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <p>Earnings increase only during work hours.</p>
                 </motion.div>
               )}
 
@@ -539,9 +539,18 @@ export default function SalaryCounter() {
                     </div>
                   </>
                 ) : (
-                  <div className="text-center py-2 text-gray-500">
-                    Today is not a working day.
-                  </div>
+                  <>
+                    <div className="flex justify-between items-center mb-1">
+                      <span>Progress - Today</span>
+                      <span className="font-medium">0%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-green-500 h-3 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: '0%' }}
+                      ></div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>

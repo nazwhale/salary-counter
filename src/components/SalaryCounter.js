@@ -5,6 +5,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion";
 import { motion } from "framer-motion";
+import { Calendar, Clock } from "lucide-react";
 
 export default function SalaryCounter() {
   // Each day: 0=Sunday,1=Monday,2=Tuesday,3=Wednesday,4=Thursday,5=Friday,6=Saturday
@@ -224,7 +225,7 @@ export default function SalaryCounter() {
     return (
       <span className="font-mono">
         {mainAmount}
-        <span className="text-sm text-gray-500 font-normal ml-0.5">.{thirdDecimal}</span>
+        <span className="text-sm text-gray-100 font-normal ml-0.5">.{thirdDecimal}</span>
       </span>
     );
   }
@@ -304,6 +305,19 @@ export default function SalaryCounter() {
       todayPercentComplete = ((elapsedTodayHours / totalDailyHours) * 100).toFixed(1);
     }
   }
+
+  // Check if we're currently in work hours
+  const isCurrentlyInWorkHours = () => {
+    if (!isDayEnabled(today)) {
+      return false; // Not a working day
+    }
+
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInHours = currentHour + (currentMinute / 60);
+
+    return currentTimeInHours >= startHour && currentTimeInHours < endHour;
+  };
 
   // We'll calculate the per-second earnings within work hours.
   const totalWorkHours = getTotalWorkingHoursThisMonth();
@@ -413,21 +427,29 @@ export default function SalaryCounter() {
               </AccordionItem>
             </Accordion>
 
-            <div className="bg-white rounded-xl p-4 shadow-md">
-              <h2 className="text-xl font-bold mb-2">Earnings So Far In {currentMonthName}</h2>
-              <p className="text-3xl font-semibold">{formatCurrency(earnedSoFar)}</p>
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg text-white">
+              <div className="flex items-center gap-3 mb-3">
+                <Calendar className="w-6 h-6" />
+                <h2 className="text-xl font-bold">Earnings in {currentMonthName}</h2>
+              </div>
+              <p className="text-4xl font-semibold">{formatCurrency(earnedSoFar)}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-md mt-4">
-              <h2 className="text-xl font-bold mb-2">Earnings So Far Today</h2>
-              <p className="text-3xl font-semibold">{formatCurrency(earnedToday)}</p>
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-lg text-white mt-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Clock className="w-6 h-6" />
+                <h2 className="text-xl font-bold">Earnings Today</h2>
+              </div>
+              <p className="text-4xl font-semibold">{formatCurrency(earnedToday)}</p>
             </div>
             <div className="mt-4 text-sm text-gray-600">
-              <p>Earnings increase only in work hours.</p>
+              {!isCurrentlyInWorkHours() && (
+                <p>Earnings increase only in work hours.</p>
+              )}
 
               {/* Month Progress Bar */}
               <div className="mt-3">
                 <div className="flex justify-between items-center mb-1">
-                  <span>Progress through {currentMonthName}</span>
+                  <span>Progress - {currentMonthName}</span>
                   <span className="font-medium">{percentComplete}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
@@ -443,7 +465,7 @@ export default function SalaryCounter() {
                 {isDayEnabled(today) ? (
                   <>
                     <div className="flex justify-between items-center mb-1">
-                      <span>Progress through today's work hours</span>
+                      <span>Progress - Today</span>
                       <span className="font-medium">{todayPercentComplete}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">

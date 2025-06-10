@@ -3,6 +3,7 @@ import { useLocalStorage } from 'usehooks-ts';
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion";
 import { motion } from "framer-motion";
 
 export default function SalaryCounter() {
@@ -84,7 +85,7 @@ export default function SalaryCounter() {
     const interval = setInterval(() => {
       setEarnedSoFar(calculateEarnings(annualSalary));
       setEarnedToday(calculateDailyEarnings(annualSalary));
-    }, 500);
+    }, 50);
 
     return () => clearInterval(interval);
   }, [annualSalary, startHour, endHour, dayToggles, currency, calculateEarnings, calculateDailyEarnings]);
@@ -207,13 +208,25 @@ export default function SalaryCounter() {
   // format currency using the chosen symbol in the UI
   function formatCurrency(amount) {
     const c = currencyMap[currency];
-    // We'll keep 2 decimals max for the main display
-    return amount.toLocaleString(c.locale, {
+
+    // Get the main amount with 2 decimal places
+    const mainAmount = amount.toLocaleString(c.locale, {
       style: 'currency',
       currency: c.code,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+
+    // Calculate the 3rd decimal digit
+    const scaledAmount = Math.round(amount * 1000);
+    const thirdDecimal = scaledAmount % 10;
+
+    return (
+      <span className="font-mono">
+        {mainAmount}
+        <span className="text-sm text-gray-500 font-normal ml-0.5">.{thirdDecimal}</span>
+      </span>
+    );
   }
 
   // format monthly salary with 0 decimals for help text, if desired
@@ -310,81 +323,96 @@ export default function SalaryCounter() {
       >
         <Card className="shadow-lg p-4 rounded-2xl">
           <CardContent>
-            <div className="mb-4">
-              <Label htmlFor="salary" className="text-lg font-semibold mb-2 block">
-                Annual Salary
-              </Label>
-              <Input
-                id="salary"
-                type="number"
-                value={annualSalary}
-                onChange={handleSalaryChange}
-                className="w-full"
-              />
-              <div className="flex gap-2 items-center mt-2">
-                <p className="text-sm text-gray-600">Currency:</p>
-                <select
-                  value={currency}
-                  onChange={handleCurrencyChange}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value="$">$</option>
-                  <option value="£">£</option>
-                  <option value="€">€</option>
-                  <option value="¥">¥</option>
-                </select>
-              </div>
-              <p className="text-sm text-gray-600 mt-1">
-                Monthly Salary: {monthlySalaryDisplay}
-              </p>
-              <p className="text-sm text-gray-600">
-                Earned per second (within work hours): £{earnedPerSecond.toFixed(4)}
-              </p>
-            </div>
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1">
-                <Label htmlFor="startHour" className="text-lg font-semibold mb-2 block">
-                  Start Hour
-                </Label>
-                <Input
-                  id="startHour"
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={startHour}
-                  onChange={handleStartHourChange}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex-1">
-                <Label htmlFor="endHour" className="text-lg font-semibold mb-2 block">
-                  End Hour
-                </Label>
-                <Input
-                  id="endHour"
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={endHour}
-                  onChange={handleEndHourChange}
-                  className="w-full"
-                />
-              </div>
-            </div>
-            <div className="mb-4 grid grid-cols-7 gap-2">
-              {dayLabels.map((label, idx) => (
-                <div key={label} className="flex flex-col items-center">
-                  <Label htmlFor={`day-${idx}`} className="text-sm mb-1">{label}</Label>
-                  <input
-                    id={`day-${idx}`}
-                    type="checkbox"
-                    checked={dayToggles[idx]}
-                    onChange={() => handleDayToggle(idx)}
-                    aria-label={label}
-                  />
-                </div>
-              ))}
-            </div>
+            <Accordion type="single" collapsible={true} className="mb-6">
+              <AccordionItem value="config">
+                <AccordionTrigger className="text-lg font-semibold">
+                  Configuration
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="salary" className="text-lg font-semibold mb-2 block">
+                        Annual Salary
+                      </Label>
+                      <Input
+                        id="salary"
+                        type="number"
+                        value={annualSalary}
+                        onChange={handleSalaryChange}
+                        className="w-full"
+                      />
+                      <div className="flex gap-2 items-center mt-2">
+                        <p className="text-sm text-gray-600">Currency:</p>
+                        <select
+                          value={currency}
+                          onChange={handleCurrencyChange}
+                          className="border rounded px-2 py-1 text-sm"
+                        >
+                          <option value="$">$</option>
+                          <option value="£">£</option>
+                          <option value="€">€</option>
+                          <option value="¥">¥</option>
+                        </select>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Monthly Salary: {monthlySalaryDisplay}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Earned per second (within work hours): {currency}{earnedPerSecond.toFixed(4)}
+                      </p>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="startHour" className="text-lg font-semibold mb-2 block">
+                          Start Hour
+                        </Label>
+                        <Input
+                          id="startHour"
+                          type="number"
+                          min="0"
+                          max="23"
+                          value={startHour}
+                          onChange={handleStartHourChange}
+                          className="w-full"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor="endHour" className="text-lg font-semibold mb-2 block">
+                          End Hour
+                        </Label>
+                        <Input
+                          id="endHour"
+                          type="number"
+                          min="0"
+                          max="23"
+                          value={endHour}
+                          onChange={handleEndHourChange}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-lg font-semibold mb-2 block">Working Days</Label>
+                      <div className="grid grid-cols-7 gap-2">
+                        {dayLabels.map((label, idx) => (
+                          <div key={label} className="flex flex-col items-center">
+                            <Label htmlFor={`day-${idx}`} className="text-sm mb-1">{label}</Label>
+                            <input
+                              id={`day-${idx}`}
+                              type="checkbox"
+                              checked={dayToggles[idx]}
+                              onChange={() => handleDayToggle(idx)}
+                              aria-label={label}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
             <div className="bg-white rounded-xl p-4 shadow-md">
               <h2 className="text-xl font-bold mb-2">Earnings So Far In {currentMonthName}</h2>
               <p className="text-3xl font-semibold">{formatCurrency(earnedSoFar)}</p>

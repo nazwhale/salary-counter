@@ -24,6 +24,8 @@ export default function SalaryCounter() {
   const [startHour, setStartHour] = useLocalStorage('salary-counter-start-hour', 10);
   const [endHour, setEndHour] = useLocalStorage('salary-counter-end-hour', 18);
   const [currency, setCurrency] = useLocalStorage('salary-counter-currency', '£');
+  const [showTakeHome, setShowTakeHome] = useLocalStorage('salary-counter-show-take-home', false);
+  const [taxPercentage, setTaxPercentage] = useLocalStorage('salary-counter-tax-percentage', 30);
 
   // These values are calculated and don't need to be persisted
   const [earnedSoFar, setEarnedSoFar] = useState(0);
@@ -43,6 +45,14 @@ export default function SalaryCounter() {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+  // Helper function to apply tax calculation when take-home mode is enabled
+  const applyTaxCalculation = useCallback((grossAmount) => {
+    if (showTakeHome) {
+      return grossAmount * (1 - taxPercentage / 100);
+    }
+    return grossAmount;
+  }, [showTakeHome, taxPercentage]);
 
   // Calculates how much we've earned so far today
   const calculateDailyEarnings = useCallback((annual) => {
@@ -66,8 +76,9 @@ export default function SalaryCounter() {
     if (totalDailyWorkingHours === 0) return 0;
 
     const fraction = Math.max(0, Math.min(1, elapsedHours / totalDailyWorkingHours));
-    return dailyRate * fraction;
-  }, [dayToggles, startHour, endHour]);
+    const grossEarnings = dailyRate * fraction;
+    return applyTaxCalculation(grossEarnings);
+  }, [dayToggles, startHour, endHour, applyTaxCalculation]);
 
   // Calculates how much we've earned so far this month
   const calculateEarnings = useCallback((annual) => {
@@ -78,8 +89,9 @@ export default function SalaryCounter() {
     if (totalWorkingHours === 0) return 0;
 
     const fraction = Math.max(0, Math.min(1, elapsedHours / totalWorkingHours));
-    return monthly * fraction;
-  }, [dayToggles, startHour, endHour]);
+    const grossEarnings = monthly * fraction;
+    return applyTaxCalculation(grossEarnings);
+  }, [dayToggles, startHour, endHour, applyTaxCalculation]);
 
   useEffect(() => {
     // Recalculate every second
@@ -89,7 +101,7 @@ export default function SalaryCounter() {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [annualSalary, startHour, endHour, dayToggles, currency, calculateEarnings, calculateDailyEarnings]);
+  }, [annualSalary, startHour, endHour, dayToggles, currency, showTakeHome, taxPercentage, calculateEarnings, calculateDailyEarnings]);
 
   // Helper function: checks if a given date is toggled on in dayToggles
   function isDayEnabled(date) {
@@ -269,6 +281,20 @@ export default function SalaryCounter() {
     setCurrency(e.target.value);
   };
 
+  const handleTaxPercentageChange = (e) => {
+    let val = parseFloat(e.target.value);
+    if (isNaN(val) || val < 0) {
+      val = 0;
+    } else if (val > 100) {
+      val = 100;
+    }
+    setTaxPercentage(val);
+  };
+
+  const handleTakeHomeToggle = () => {
+    setShowTakeHome(!showTakeHome);
+  };
+
   // Toggle function for dayToggles
   const handleDayToggle = (dayIndex) => {
     setDayToggles((prev) => ({
@@ -281,7 +307,7 @@ export default function SalaryCounter() {
 
   // We'll calculate the monthly salary for the help text with thousands formatting.
   const monthlySalaryRaw = annualSalary / 12;
-  const monthlySalaryDisplay = formatMonthly(monthlySalaryRaw);
+  const monthlySalaryDisplay = formatMonthly(applyTaxCalculation(monthlySalaryRaw));
 
   // We'll figure out the percent of the month completed.
   const now = new Date();
@@ -324,7 +350,7 @@ export default function SalaryCounter() {
   const totalWorkSeconds = totalWorkHours * 3600;
   let earnedPerSecond = 0;
   if (totalWorkSeconds > 0) {
-    earnedPerSecond = monthlySalaryRaw / totalWorkSeconds;
+    earnedPerSecond = applyTaxCalculation(monthlySalaryRaw) / totalWorkSeconds;
   }
 
   return (
@@ -372,6 +398,50 @@ export default function SalaryCounter() {
                         </select>
                       </div>
                     </div>
+
+                    {/* Take Home Toggle Section */}
+                    <div className="border-b">
+                      <div className="flex items-center justify-between mb-3">
+                        <Label className="text-base font-semibold">
+                          Show Take-Home (After Tax)
+                        </Label>
+                        <button
+                          onClick={handleTakeHomeToggle}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${showTakeHome ? 'bg-blue-600' : 'bg-gray-200'
+                            }`}
+                          role="switch"
+                          aria-checked={showTakeHome}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showTakeHome ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                          />
+                        </button>
+                      </div>
+
+                      {showTakeHome && (
+                        <div className="mt-3">
+                          <Label htmlFor="taxPercentage" className="text-sm font-medium mb-2 block">
+                            Tax Rate (%)
+                          </Label>
+                          <Input
+                            id="taxPercentage"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={taxPercentage}
+                            onChange={handleTaxPercentageChange}
+                            className="w-full"
+                            placeholder="30"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Default is 30%. Adjust based on your tax bracket.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex gap-4">
                       <div className="flex-1">
                         <Label htmlFor="startHour" className="text-base font-semibold mb-2 block">
@@ -443,12 +513,20 @@ export default function SalaryCounter() {
 
               <div className="flex items-center gap-3 mb-3">
                 <Calendar className="w-6 h-6" />
-                <h2 className="text-xl font-bold">Earnings in {currentMonthName}</h2>
+                <h2 className="text-xl font-bold">
+                  Earnings in {currentMonthName}
+                </h2>
               </div>
 
               <p className="text-4xl font-semibold">
                 {formatCurrency(earnedSoFar)}
               </p>
+
+              {showTakeHome && (
+                <p className="text-sm text-blue-100 mt-2">
+                  After {taxPercentage}% tax deduction
+                </p>
+              )}
             </div>
             <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-lg text-white mt-4 relative overflow-hidden">
               {/* Pulse indicator for active earning */}
@@ -470,12 +548,20 @@ export default function SalaryCounter() {
 
               <div className="flex items-center gap-3 mb-3">
                 <Clock className="w-6 h-6" />
-                <h2 className="text-xl font-bold">Earnings Today</h2>
+                <h2 className="text-xl font-bold">
+                  Earnings Today
+                </h2>
               </div>
 
               <p className="text-4xl font-semibold">
                 {formatCurrency(earnedToday)}
               </p>
+
+              {showTakeHome && (
+                <p className="text-sm text-green-100 mt-2">
+                  After {taxPercentage}% tax deduction
+                </p>
+              )}
             </div>
             <div className="mt-4 text-sm text-gray-600">
               {/* Prominent earnings rate display - always visible */}
@@ -488,7 +574,9 @@ export default function SalaryCounter() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-blue-600" />
-                      <span className="text-gray-700 font-medium">Your earning rate:</span>
+                      <span className="text-gray-700 font-medium">
+                        {showTakeHome ? 'Take-home' : 'Gross'} earning rate:
+                      </span>
                     </div>
                     <span className="text-lg font-bold text-blue-600">
                       {currency}{earnedPerSecond.toFixed(4)}/sec

@@ -5,7 +5,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion";
 import { motion } from "framer-motion";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, TrendingUp } from "lucide-react";
 
 export default function SalaryCounter() {
   // Each day: 0=Sunday,1=Monday,2=Tuesday,3=Wednesday,4=Thursday,5=Friday,6=Saturday
@@ -345,7 +345,7 @@ export default function SalaryCounter() {
                 <AccordionContent>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="salary" className="text-lg font-semibold mb-2 block">
+                      <Label htmlFor="salary" className="text-base font-semibold mb-2 block">
                         Annual Salary
                       </Label>
                       <Input
@@ -355,6 +355,9 @@ export default function SalaryCounter() {
                         onChange={handleSalaryChange}
                         className="w-full"
                       />
+                      <p className="text-sm text-gray-600 mt-1">
+                        Monthly Salary: {monthlySalaryDisplay}
+                      </p>
                       <div className="flex gap-2 items-center mt-2">
                         <p className="text-sm text-gray-600">Currency:</p>
                         <select
@@ -368,16 +371,10 @@ export default function SalaryCounter() {
                           <option value="¥">¥</option>
                         </select>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Monthly Salary: {monthlySalaryDisplay}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Earned per second (within work hours): {currency}{earnedPerSecond.toFixed(4)}
-                      </p>
                     </div>
                     <div className="flex gap-4">
                       <div className="flex-1">
-                        <Label htmlFor="startHour" className="text-lg font-semibold mb-2 block">
+                        <Label htmlFor="startHour" className="text-base font-semibold mb-2 block">
                           Start Hour
                         </Label>
                         <Input
@@ -391,7 +388,7 @@ export default function SalaryCounter() {
                         />
                       </div>
                       <div className="flex-1">
-                        <Label htmlFor="endHour" className="text-lg font-semibold mb-2 block">
+                        <Label htmlFor="endHour" className="text-base font-semibold mb-2 block">
                           End Hour
                         </Label>
                         <Input
@@ -406,7 +403,7 @@ export default function SalaryCounter() {
                       </div>
                     </div>
                     <div>
-                      <Label className="text-lg font-semibold mb-2 block">Working Days</Label>
+                      <Label className="text-base font-semibold mb-2 block">Working Days</Label>
                       <div className="grid grid-cols-7 gap-2">
                         {dayLabels.map((label, idx) => (
                           <div key={label} className="flex flex-col items-center">
@@ -427,23 +424,89 @@ export default function SalaryCounter() {
               </AccordionItem>
             </Accordion>
 
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg text-white">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg text-white relative overflow-hidden">
+              {/* Pulse indicator for active earning */}
+              {isCurrentlyInWorkHours() && (
+                <motion.div
+                  className="absolute top-4 right-4 w-3 h-3 bg-white rounded-full"
+                  animate={{
+                    opacity: [0.4, 1, 0.4],
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              )}
+
               <div className="flex items-center gap-3 mb-3">
                 <Calendar className="w-6 h-6" />
                 <h2 className="text-xl font-bold">Earnings in {currentMonthName}</h2>
               </div>
-              <p className="text-4xl font-semibold">{formatCurrency(earnedSoFar)}</p>
+
+              <p className="text-4xl font-semibold">
+                {formatCurrency(earnedSoFar)}
+              </p>
             </div>
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-lg text-white mt-4">
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-lg text-white mt-4 relative overflow-hidden">
+              {/* Pulse indicator for active earning */}
+              {isCurrentlyInWorkHours() && (
+                <motion.div
+                  className="absolute top-4 right-4 w-3 h-3 bg-white rounded-full"
+                  animate={{
+                    opacity: [0.4, 1, 0.4],
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.5, // Slight delay from the monthly card
+                  }}
+                />
+              )}
+
               <div className="flex items-center gap-3 mb-3">
                 <Clock className="w-6 h-6" />
                 <h2 className="text-xl font-bold">Earnings Today</h2>
               </div>
-              <p className="text-4xl font-semibold">{formatCurrency(earnedToday)}</p>
+
+              <p className="text-4xl font-semibold">
+                {formatCurrency(earnedToday)}
+              </p>
             </div>
             <div className="mt-4 text-sm text-gray-600">
               {!isCurrentlyInWorkHours() && (
-                <p>Earnings increase only in work hours.</p>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg mb-3"
+                >
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <p>Earnings increase only during work hours.</p>
+                </motion.div>
+              )}
+
+              {/* Prominent earnings rate display - always visible */}
+              {earnedPerSecond > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-blue-50 to-green-50 p-3 rounded-lg mb-3 border border-blue-100"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-blue-600" />
+                      <span className="text-gray-700 font-medium">Your earning rate:</span>
+                    </div>
+                    <span className="text-lg font-bold text-blue-600">
+                      {currency}{earnedPerSecond.toFixed(4)}/sec
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">During work hours</p>
+                </motion.div>
               )}
 
               {/* Month Progress Bar */}

@@ -366,7 +366,7 @@ export default function SalaryCounter() {
             <Accordion type="single" collapsible={true} className="mb-6">
               <AccordionItem value="config">
                 <AccordionTrigger className="text-lg font-semibold">
-                  Configuration
+                  Set your salary
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
